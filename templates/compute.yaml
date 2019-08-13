@@ -1,0 +1,81 @@
+# Compute stack
+AWSTemplateFormatVersion: 2010-09-09
+# Reference: https://docs.aws.amazon.com/codebuild/latest/userguide/cloudformation-vpc-template.html
+# Some explanation on resources https://www.infoq.com/articles/aws-vpc-cloudformation/
+Description: Rentaboat's CloudFormation stack template
+Parameters:
+  KeyName:
+    Description: EC2 Key Pair to allow SSH access to instances
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 Keypair
+
+  WebInstanceType:
+    Description: Web server EC2 instance type
+    Type: String
+    Default: t3.nano
+    AllowedValues:
+      - t3.nano
+      - t3.micro
+      - t3.small
+    ConstraintDescription: Must be a valid EC2 instance type
+
+Resources:
+  WebAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: WebScalingGroup
+      LaunchConfigurationName: !Ref WebASGLaunchConfig # Launch configuration for instances
+      # Split into List
+      VPCZoneIdentifier: !Split [",", !ImportValue ProdevCloudformationRentaboatPublicSubnets]
+      MaxSize: '4'
+      MinSize: '0' # The Jeff fears the Samurai
+      TargetGroupARNs:
+        - !Ref WebELBTargetGroup
+      #TODO: Load balancer
+    #TODO: CreationPolicy, UpdatePolicy
+
+  # Auto scaling launch configuration
+  WebASGLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      Comment:
+        test
+      "AWS::CloudFormation::Init":
+        config:
+          packages:
+            yum:
+              httpd: []
+              node: []
+              npm: []
+        #files, services
+    Properties:
+      KeyName: !Ref KeyName #Ref to key pair used to connect via SSH
+      ImageId: ami-02a6bfdcf8224bd77 # TODO: map amis to processor type and retrieve
+      InstanceType: !Ref WebInstanceType
+      #TODO: add security group reference, UserData
+
+  WebLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets: !Split [",", !ImportValue ProdevCloudformationRentaboatPublicSubnets]
+    
+  WebELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebELBTargetGroup
+      LoadBalancerArn: !Ref WebLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  WebELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !ImportValue ProdevCloudformationRentaboatVPC

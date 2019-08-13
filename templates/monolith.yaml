@@ -1,0 +1,382 @@
+AWSTemplateFormatVersion: 2010-09-09
+# Reference: https://docs.aws.amazon.com/codebuild/latest/userguide/cloudformation-vpc-template.html
+# Some explanation on resources https://www.infoq.com/articles/aws-vpc-cloudformation/
+Description: Rentaboat's CloudFormation stack template
+Parameters:
+  EnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+
+  VpcCIDR:
+    Description: IP range (CIDR notation) for this VPC
+    Type: String
+    Default: 10.192.0.0/16
+    AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+
+  PublicWebLayerSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.10.0/24
+
+  PublicWebLayerSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the public subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.11.0/24
+
+  PrivateAppLayerSubnet1CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the first Availability Zone
+    Type: String
+    Default: 10.192.20.0/24
+
+  PrivateAppLayerSubnet2CIDR:
+    Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
+    Type: String
+    Default: 10.192.21.0/24
+
+  KeyName:
+    Description: EC2 Key Pair to allow SSH access to instances
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 Keypair
+
+  WebInstanceType:
+    Description: Web server EC2 instance type
+    Type: String
+    Default: t3.nano
+    AllowedValues:
+      - t3.nano
+      - t3.micro
+      - t3.small
+    ConstraintDescription: Must be a valid EC2 instance type
+
+  # AppInstanceType:
+  #   Description: App server EC2 instance type
+  #   Type: String
+  #   Default: t2.small
+  #   AllowedValues:
+  #     - t1.micro
+  #     - t2.nano
+  #     - t2.micro
+  #     - t2.small
+  #     - t2.medium
+  #     - t2.large
+  #     - m1.small
+  #     - m1.medium
+  #     - m1.large
+  #     - m1.xlarge
+  #     - m2.xlarge
+  #     - m2.2xlarge
+  #     - m2.4xlarge
+  #     - m3.medium
+  #     - m3.large
+  #     - m3.xlarge
+  #     - m3.2xlarge
+  #     - m4.large
+  #     - m4.xlarge
+  #     - m4.2xlarge
+  #     - m4.4xlarge
+  #     - m4.10xlarge
+  #     - c1.medium
+  #     - c1.xlarge
+  #     - c3.large
+  #     - c3.xlarge
+  #     - c3.2xlarge
+  #     - c3.4xlarge
+  #     - c3.8xlarge
+  #     - c4.large
+  #     - c4.xlarge
+  #     - c4.2xlarge
+  #     - c4.4xlarge
+  #     - c4.8xlarge
+  #     - g2.2xlarge
+  #     - g2.8xlarge
+  #     - r3.large
+  #     - r3.xlarge
+  #     - r3.2xlarge
+  #     - r3.4xlarge
+  #     - r3.8xlarge
+  #     - i2.xlarge
+  #     - i2.2xlarge
+  #     - i2.4xlarge
+  #     - i2.8xlarge
+  #     - d2.xlarge
+  #     - d2.2xlarge
+  #     - d2.4xlarge
+  #     - d2.8xlarge
+  #     - hi1.4xlarge
+  #     - hs1.8xlarge
+  #     - cr1.8xlarge
+  #     - cc2.8xlarge
+  #     - cg1.4xlarge
+  #   ConstraintDescription: Must be a valid EC2 instance type
+
+# Mappings:
+
+# Conditions:
+
+Resources:
+  # VPC
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCIDR
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+        - Key: Project
+          Value: Rentaboat
+  # Internet Gateway
+  IGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: EnvironmentName
+
+  InternetGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref IGateway
+  # Subnets
+  PublicWebLayerSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicWebLayerSubnet1CIDR
+      AvailabilityZone: !Select [0, !GetAZs ""] # Select first AZ
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ1)
+
+  PublicWebLayerSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicWebLayerSubnet2CIDR
+      AvailabilityZone: !Select [1, !GetAZs ""] # Select second AZ
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Subnet (AZ2)
+
+  PrivateAppLayerSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateAppLayerSubnet1CIDR
+      AvailabilityZone: !Select [0, !GetAZs ""] # Select first AZ
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ1)
+
+  PrivateAppLayerSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PrivateAppLayerSubnet2CIDR
+      AvailabilityZone: !Select [1, !GetAZs ""] # Select second AZ
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Subnet (AZ2)
+  # NAT Gateway for public subnets
+  NatGateway1ElasticIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+
+  NatGateway2ElasticIP:
+    Type: AWS::EC2::EIP
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      Domain: vpc
+  
+  NatGateway1:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway1ElasticIP.AllocationId
+      SubnetId: !Ref PublicWebLayerSubnet1
+
+  NatGateway2:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGateway2ElasticIP.AllocationId
+      SubnetId: !Ref PublicWebLayerSubnet2
+  # Public routing
+  # A route table defines where traffic goes through Table Routes (AWS::EC2::Route)
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Public Routes
+  # Creates a route in the public route table for the internet gateway to provide access to the internet
+  DefaultPublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: InternetGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGateway
+  # Associates Public subnet to Route table with a record for the internet gateway
+  PublicSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicWebLayerSubnet1
+
+  PublicSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicWebLayerSubnet2
+  # Private routing
+  PrivateRouteTable1:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ1)
+
+  DefaultPrivateRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway1
+
+  PrivateSubnet1RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable1
+      SubnetId: !Ref PrivateAppLayerSubnet1
+
+  PrivateRouteTable2:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Sub ${EnvironmentName} Private Routes (AZ2)
+
+  DefaultPrivateRoute2:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway2
+
+  PrivateSubnet2RouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable2
+      SubnetId: !Ref PrivateAppLayerSubnet2
+
+  # EC2 autoscaling and load balancing
+  # Ref https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html
+  
+  WebAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: WebScalingGroup
+      LaunchConfigurationName: !Ref WebASGLaunchConfig # Launch configuration for instances
+      VPCZoneIdentifier:
+        - !Ref PublicWebLayerSubnet1
+        - !Ref PublicWebLayerSubnet2
+      MaxSize: '4'
+      MinSize: '1'
+      TargetGroupARNs:
+        - !Ref WebELBTargetGroup
+      #TODO: Load balancer
+    #TODO: CreationPolicy, UpdatePolicy
+
+  # Auto scaling launch configuration
+  WebASGLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      Comment:
+        test
+      "AWS::CloudFormation::Init":
+        config:
+          packages:
+            yum:
+              httpd: []
+              node: []
+              npm: []
+        #files, services
+    Properties:
+      KeyName: !Ref KeyName #Ref to key pair used to connect via SSH
+      ImageId: ami-02a6bfdcf8224bd77 # TODO: map amis to processor type and retrieve
+      InstanceType: !Ref WebInstanceType
+      #TODO: add security group reference, UserData
+
+  WebLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - !Ref PublicWebLayerSubnet1
+        - !Ref PublicWebLayerSubnet2
+    
+  WebELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebELBTargetGroup
+      LoadBalancerArn: !Ref WebLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  WebELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref VPC
+
+  #TODO: Security groups
+
+
+Outputs:
+  VPC:
+    Description: A reference to the created VPC
+    Value: !Ref VPC
+
+  PublicSubnets:
+    Description: A list of the public subnets
+    Value: !Join [ ",", [ !Ref PublicWebLayerSubnet1, !Ref PublicWebLayerSubnet2 ]]
+
+  PrivateSubnets:
+    Description: A list of the private subnets
+    Value: !Join [ ",", [ !Ref PrivateAppLayerSubnet1, !Ref PrivateAppLayerSubnet2 ]]
+
+  PublicSubnet1:
+    Description: A reference to the public subnet in the 1st Availability Zone
+    Value: !Ref PublicWebLayerSubnet1
+
+  PublicSubnet2:
+    Description: A reference to the public subnet in the 2nd Availability Zone
+    Value: !Ref PublicWebLayerSubnet2
+
+  PrivateSubnet1:
+    Description: A reference to the private subnet in the 1st Availability Zone
+    Value: !Ref PrivateAppLayerSubnet1
+
+  PrivateSubnet2:
+    Description: A reference to the private subnet in the 2nd Availability Zone
+    Value: !Ref PrivateAppLayerSubnet2
+  
+  
+# Outputs:
