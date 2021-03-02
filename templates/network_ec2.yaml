@@ -1,5 +1,6 @@
 AWSTemplateFormatVersion: 2010-09-09
 # Reference: https://docs.aws.amazon.com/codebuild/latest/userguide/cloudformation-vpc-template.html
+# Some explanation on resources https://www.infoq.com/articles/aws-vpc-cloudformation/
 Description: Rentaboat's CloudFormation stack template
 Parameters:
   EnvironmentName:
@@ -31,6 +32,131 @@ Parameters:
     Description: Please enter the IP range (CIDR notation) for the private subnet in the second Availability Zone
     Type: String
     Default: 10.192.21.0/24
+
+  KeyName:
+    Description: EC2 Key Pair to allow SSH access to instances
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 Keypair
+
+  WebInstanceType:
+    Description: Web server EC2 instance type
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t1.micro
+      - t2.nano
+      - t2.micro
+      - t2.small
+      - t2.medium
+      - t2.large
+      - m1.small
+      - m1.medium
+      - m1.large
+      - m1.xlarge
+      - m2.xlarge
+      - m2.2xlarge
+      - m2.4xlarge
+      - m3.medium
+      - m3.large
+      - m3.xlarge
+      - m3.2xlarge
+      - m4.large
+      - m4.xlarge
+      - m4.2xlarge
+      - m4.4xlarge
+      - m4.10xlarge
+      - c1.medium
+      - c1.xlarge
+      - c3.large
+      - c3.xlarge
+      - c3.2xlarge
+      - c3.4xlarge
+      - c3.8xlarge
+      - c4.large
+      - c4.xlarge
+      - c4.2xlarge
+      - c4.4xlarge
+      - c4.8xlarge
+      - g2.2xlarge
+      - g2.8xlarge
+      - r3.large
+      - r3.xlarge
+      - r3.2xlarge
+      - r3.4xlarge
+      - r3.8xlarge
+      - i2.xlarge
+      - i2.2xlarge
+      - i2.4xlarge
+      - i2.8xlarge
+      - d2.xlarge
+      - d2.2xlarge
+      - d2.4xlarge
+      - d2.8xlarge
+      - hs1.8xlarge
+      - cr1.8xlarge
+      - cc2.8xlarge
+    ConstraintDescription: Must be a valid EC2 instance type
+
+  # AppInstanceType:
+  #   Description: App server EC2 instance type
+  #   Type: String
+  #   Default: t2.small
+  #   AllowedValues:
+  #     - t1.micro
+  #     - t2.nano
+  #     - t2.micro
+  #     - t2.small
+  #     - t2.medium
+  #     - t2.large
+  #     - m1.small
+  #     - m1.medium
+  #     - m1.large
+  #     - m1.xlarge
+  #     - m2.xlarge
+  #     - m2.2xlarge
+  #     - m2.4xlarge
+  #     - m3.medium
+  #     - m3.large
+  #     - m3.xlarge
+  #     - m3.2xlarge
+  #     - m4.large
+  #     - m4.xlarge
+  #     - m4.2xlarge
+  #     - m4.4xlarge
+  #     - m4.10xlarge
+  #     - c1.medium
+  #     - c1.xlarge
+  #     - c3.large
+  #     - c3.xlarge
+  #     - c3.2xlarge
+  #     - c3.4xlarge
+  #     - c3.8xlarge
+  #     - c4.large
+  #     - c4.xlarge
+  #     - c4.2xlarge
+  #     - c4.4xlarge
+  #     - c4.8xlarge
+  #     - g2.2xlarge
+  #     - g2.8xlarge
+  #     - r3.large
+  #     - r3.xlarge
+  #     - r3.2xlarge
+  #     - r3.4xlarge
+  #     - r3.8xlarge
+  #     - i2.xlarge
+  #     - i2.2xlarge
+  #     - i2.4xlarge
+  #     - i2.8xlarge
+  #     - d2.xlarge
+  #     - d2.2xlarge
+  #     - d2.4xlarge
+  #     - d2.8xlarge
+  #     - hi1.4xlarge
+  #     - hs1.8xlarge
+  #     - cr1.8xlarge
+  #     - cc2.8xlarge
+  #     - cg1.4xlarge
+  #   ConstraintDescription: Must be a valid EC2 instance type
 
 # Mappings:
 
@@ -68,7 +194,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicWebLayerSubnet1CIDR
-      AvailabilityZone: !Select [0, !GetAZs ""]
+      AvailabilityZone: !Select [0, !GetAZs ""] # Select first AZ
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -79,7 +205,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PublicWebLayerSubnet2CIDR
-      AvailabilityZone: !Select [0, !GetAZs ""]
+      AvailabilityZone: !Select [1, !GetAZs ""] # Select second AZ
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
@@ -90,7 +216,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PrivateAppLayerSubnet1CIDR
-      AvailabilityZone: !Select [0, !GetAZs ""]
+      AvailabilityZone: !Select [0, !GetAZs ""] # Select first AZ
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -101,7 +227,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       CidrBlock: !Ref PrivateAppLayerSubnet2CIDR
-      AvailabilityZone: !Select [0, !GetAZs ""]
+      AvailabilityZone: !Select [1, !GetAZs ""] # Select second AZ
       MapPublicIpOnLaunch: false
       Tags:
         - Key: Name
@@ -131,6 +257,7 @@ Resources:
       AllocationId: !GetAtt NatGateway2ElasticIP.AllocationId
       SubnetId: !Ref PublicWebLayerSubnet2
   # Public routing
+  # A route table defines where traffic goes through Table Routes (AWS::EC2::Route)
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
@@ -138,7 +265,7 @@ Resources:
       Tags:
         - Key: Name
           Value: !Sub ${EnvironmentName} Public Routes
-  
+  # Creates a route in the public route table for the internet gateway to provide access to the internet
   DefaultPublicRoute:
     Type: AWS::EC2::Route
     DependsOn: InternetGatewayAttachment
@@ -146,7 +273,7 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref IGateway
-
+  # Associates Public subnet to Route table with a record for the internet gateway
   PublicSubnet1RouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
@@ -207,6 +334,73 @@ Resources:
       GroupName: "no-ingress-sg"
       GroupDescription: "Security group with no ingress rule"
       VpcId: !Ref VPC
+
+  # EC2 autoscaling and load balancing
+  # Ref https://docs.aws.amazon.com/autoscaling/ec2/userguide/autoscaling-load-balancer.html
+  
+  WebAutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: WebScalingGroup
+      LaunchConfigurationName: !Ref WebASGLaunchConfig # Launch configuration for instances
+      VPCZoneIdentifier:
+        - !Ref PublicWebLayerSubnet1
+        - !Ref PublicWebLayerSubnet2
+      MaxSize: '4'
+      MinSize: '0'
+      TargetGroupARNs:
+        - !Ref WebELBTargetGroup
+      #TODO: Load balancer
+    #TODO: CreationPolicy, UpdatePolicy
+
+  # Auto scaling launch configuration
+  WebASGLaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      "AWS::CloudFormation::Init":
+        config:
+          packages:
+            yum:
+              httpd: []
+              node: []
+              npm: []
+        #files, services
+    Properties:
+      KeyName: !Ref KeyName #Ref to key pair used to connect via SSH
+      ImageId: ami-02a6bfdcf8224bd77 # Change
+      InstanceType: !Ref WebInstanceType
+      #TODO: add security group reference, UserData
+
+  WebLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Subnets:
+        - !Ref PublicWebLayerSubnet1
+        - !Ref PublicWebLayerSubnet2
+    
+  WebELBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref WebELBTargetGroup
+      LoadBalancerArn: !Ref WebLoadBalancer
+      Port: 80
+      Protocol: HTTP
+
+  WebELBTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      Port: 80
+      Protocol: HTTP
+      UnhealthyThresholdCount: 5
+      VpcId: !Ref VPC
+
+  #TODO: Security groups
+
 
 Outputs:
   VPC:
