@@ -10,7 +10,7 @@ Parameters:
   VpcCIDR:
     Description: IP range (CIDR notation) for this VPC
     Type: String
-    Default: 10.0.0.0/16
+    Default: 10.192.0.0/16
     AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
 
   PublicWebLayerSubnet1CIDR:
