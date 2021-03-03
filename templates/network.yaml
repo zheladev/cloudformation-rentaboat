@@ -201,30 +201,45 @@ Resources:
       SubnetId: !Ref PrivateAppLayerSubnet2
 
 Outputs:
-  ProdevCloudformationRentaboatVPC:
+  VPC:
     Description: A reference to the created VPC
     Value: !Ref VPC
+    Export:
+      Name: ProdevCloudformationRentaboatVPC
+      
 
-  ProdevCloudformationRentaboatPublicSubnets:
+  PublicSubnets:
     Description: A list of the public subnets
     Value: !Join [ ",", [ !Ref PublicWebLayerSubnet1, !Ref PublicWebLayerSubnet2 ]]
+    Export:
+      Name: ProdevCloudformationRentaboatPublicSubnets
 
-  ProdevCloudformationRentaboatPrivateSubnets:
+  PrivateSubnets:
     Description: A list of the private subnets
     Value: !Join [ ",", [ !Ref PrivateAppLayerSubnet1, !Ref PrivateAppLayerSubnet2 ]]
+    Export:
+      Name: ProdevCloudformationRentaboatPrivateSubnets
 
-  ProdevCloudformationRentaboatPublicSubnet1:
+  PublicSubnet1:
     Description: A reference to the public subnet in the 1st Availability Zone
     Value: !Ref PublicWebLayerSubnet1
+    Export:
+      Name: ProdevCloudformationRentaboatPublicSubnet1
 
-  ProdevCloudformationRentaboatPublicSubnet2:
+  PublicSubnet2:
     Description: A reference to the public subnet in the 2nd Availability Zone
     Value: !Ref PublicWebLayerSubnet2
+    Export:
+      Name: ProdevCloudformationRentaboatPublicSubnet2
 
-  ProdevCloudformationRentaboatPrivateSubnet1:
+  PrivateSubnet1:
     Description: A reference to the private subnet in the 1st Availability Zone
     Value: !Ref PrivateAppLayerSubnet1
+    Export:
+      Name: ProdevCloudformationRentaboatPrivateSubnet1
 
-  ProdevCloudformationRentaboatPrivateSubnet2:
+  PrivateSubnet2:
     Description: A reference to the private subnet in the 2nd Availability Zone
     Value: !Ref PrivateAppLayerSubnet2
+    Export:
+      Name: ProdevCloudformationRentaboatPrivateSubnet2
