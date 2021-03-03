@@ -340,7 +340,7 @@ Resources:
         - !Ref PublicWebLayerSubnet1
         - !Ref PublicWebLayerSubnet2
       MaxSize: '4'
-      MinSize: '0'
+      MinSize: '1'
       TargetGroupARNs:
         - !Ref WebELBTargetGroup
       #TODO: Load balancer
