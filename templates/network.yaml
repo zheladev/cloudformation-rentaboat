@@ -2,7 +2,7 @@
 AWSTemplateFormatVersion: 2010-09-09
 # Reference: https://docs.aws.amazon.com/codebuild/latest/userguide/cloudformation-vpc-template.html
 # Some explanation on resources https://www.infoq.com/articles/aws-vpc-cloudformation/
-Description: Rentaboat's CloudFormation stack template
+Description: Rentaboat's CloudFormation networking stack template
 Parameters:
   EnvironmentName:
     Description: An environment name that is prefixed to resource names
@@ -201,30 +201,30 @@ Resources:
       SubnetId: !Ref PrivateAppLayerSubnet2
 
 Outputs:
-  VPC:
+  ProdevCloudformationRentaboatVPC:
     Description: A reference to the created VPC
     Value: !Ref VPC
 
-  PublicSubnets:
+  ProdevCloudformationRentaboatPublicSubnets:
     Description: A list of the public subnets
     Value: !Join [ ",", [ !Ref PublicWebLayerSubnet1, !Ref PublicWebLayerSubnet2 ]]
 
-  PrivateSubnets:
+  ProdevCloudformationRentaboatPrivateSubnets:
     Description: A list of the private subnets
     Value: !Join [ ",", [ !Ref PrivateAppLayerSubnet1, !Ref PrivateAppLayerSubnet2 ]]
 
-  PublicSubnet1:
+  ProdevCloudformationRentaboatPublicSubnet1:
     Description: A reference to the public subnet in the 1st Availability Zone
     Value: !Ref PublicWebLayerSubnet1
 
-  PublicSubnet2:
+  ProdevCloudformationRentaboatPublicSubnet2:
     Description: A reference to the public subnet in the 2nd Availability Zone
     Value: !Ref PublicWebLayerSubnet2
 
-  PrivateSubnet1:
+  ProdevCloudformationRentaboatPrivateSubnet1:
     Description: A reference to the private subnet in the 1st Availability Zone
     Value: !Ref PrivateAppLayerSubnet1
 
-  PrivateSubnet2:
+  ProdevCloudformationRentaboatPrivateSubnet2:
     Description: A reference to the private subnet in the 2nd Availability Zone
     Value: !Ref PrivateAppLayerSubnet2

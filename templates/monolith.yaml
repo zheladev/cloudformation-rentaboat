@@ -301,16 +301,16 @@ Resources:
   # Auto scaling launch configuration
   WebASGLaunchConfig:
     Type: AWS::AutoScaling::LaunchConfiguration
-    # Metadata:
-    #   Comment:
-    #     test
-    #   "AWS::CloudFormation::Init":
-    #     config:
-    #       packages:
-    #         yum:
-    #           httpd: []
-    #           node: []
-    #           npm: []
+    Metadata:
+      Comment:
+        test
+      "AWS::CloudFormation::Init":
+        config:
+          packages:
+            yum:
+              httpd: []
+              node: []
+              npm: []
         #files, services
     Properties:
       KeyName: !Ref KeyName #Ref to key pair used to connect via SSH
